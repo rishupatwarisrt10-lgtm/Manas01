@@ -8,11 +8,22 @@ import User from '@/models/User';
 
 // Validate environment variables
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-  console.warn('Warning: Google OAuth credentials are not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your .env.local file.');
+  console.warn('Warning: Google OAuth credentials are not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your environment variables.');
 }
 
 if (!process.env.NEXTAUTH_SECRET) {
-  console.warn('Warning: NEXTAUTH_SECRET is not configured. Please set NEXTAUTH_SECRET in your .env.local file.');
+  console.error('Error: NEXTAUTH_SECRET is not configured. Please set NEXTAUTH_SECRET in your environment variables.');
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('NEXTAUTH_SECRET is required in production');
+  }
+}
+
+if (!process.env.NEXTAUTH_URL) {
+  console.warn('Warning: NEXTAUTH_URL is not configured. Please set NEXTAUTH_URL in your environment variables.');
+}
+
+if (!process.env.DATABASE_URL) {
+  console.warn('Warning: DATABASE_URL is not configured. Database features will be limited.');
 }
 
 export const authOptions: NextAuthOptions = {

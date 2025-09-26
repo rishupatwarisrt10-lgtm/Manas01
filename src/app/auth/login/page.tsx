@@ -27,15 +27,23 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password');
-      } else {
+        if (result.error === 'CredentialsSignin') {
+          setError('Invalid email or password');
+        } else {
+          setError('Authentication failed. Please try again.');
+        }
+        console.error('Login error:', result.error);
+      } else if (result?.ok) {
         // Wait for session to be established
         await getSession();
         router.push('/dashboard');
         router.refresh();
+      } else {
+        setError('Login failed. Please check your credentials.');
       }
     } catch (error) {
-      setError('An error occurred. Please try again.');
+      console.error('Login error:', error);
+      setError('An error occurred. Please try again later.');
     } finally {
       setIsLoading(false);
     }
