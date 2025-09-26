@@ -1,0 +1,443 @@
+/* src/app/globals.css */
+
+/* This is the Tailwind v4 import - moved to top for proper cascading */
+@import "tailwindcss";
+
+/* Custom CSS for the animated background */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animated-gradient {
+  background: linear-gradient(-45deg, #1b2735, #090a0f, #2c3e50, #2980b9);
+  background-size: 400% 400%;
+  animation: gradient-shift 18s ease infinite;
+}
+
+.animated-ocean {
+  background: linear-gradient(120deg, #0f2027, #203a43, #2c5364);
+  background-size: 400% 400%;
+  animation: gradient-shift 18s ease infinite;
+}
+
+.animated-sunset {
+  background: linear-gradient(120deg, #2c1810, #8b4513, #d2691e, #ff7e5f);
+  background-size: 400% 400%;
+  animation: gradient-shift 18s ease infinite;
+  color: white;
+}
+
+.animated-forest {
+  background: linear-gradient(120deg, #134e5e, #2d5530, #355c3a, #4a7c59);
+  background-size: 400% 400%;
+  animation: gradient-shift 18s ease infinite;
+}
+
+.animated-galaxy {
+  background: radial-gradient(circle at 20% 20%, #1a2a6c, transparent 40%),
+              radial-gradient(circle at 80% 30%, #4a148c, transparent 40%),
+              radial-gradient(circle at 50% 80%, #2e7d32, transparent 40%),
+              #0f0c29;
+  background-size: 400% 400%;
+  animation: gradient-shift 30s ease infinite;
+}
+
+/* Ensure text remains readable on all themes */
+.animated-sunset * {
+  color: white !important;
+}
+
+.animated-sunset .text-white\/70 {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.animated-sunset .text-white\/80 {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.animated-sunset .text-white\/90 {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Fix button visibility on sunset theme */
+.animated-sunset .bg-white {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  color: white !important;
+}
+
+.animated-sunset .hover\:bg-gray-200:hover {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+}
+
+.animated-sunset .text-gray-900 {
+  color: white !important;
+}
+
+/* Fix theme button visibility on sunset theme */
+.animated-sunset .bg-white\.text-black {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  color: white !important;
+}
+
+/* Custom Scrollbar Styles that complement the backgrounds */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2));
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.3));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Theme-specific scrollbar styles */
+.animated-gradient ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(41, 128, 185, 0.6), rgba(44, 62, 80, 0.4));
+}
+
+.animated-ocean ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(44, 83, 100, 0.7), rgba(32, 58, 67, 0.5));
+}
+
+.animated-sunset ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(210, 105, 30, 0.7), rgba(139, 69, 19, 0.5));
+}
+
+.animated-forest ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(74, 124, 89, 0.7), rgba(53, 92, 58, 0.5));
+}
+
+.animated-galaxy ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(74, 20, 140, 0.7), rgba(26, 42, 108, 0.5));
+}
+
+/* Firefox scrollbar support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+}
+
+/* Custom scrollbar class for enhanced visibility */
+.scrollbar-custom {
+  scrollbar-width: auto;
+  scrollbar-color: rgba(255, 255, 255, 0.5) rgba(255, 255, 255, 0.1);
+}
+
+.scrollbar-custom::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2));
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+  transition: all 0.3s ease;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4));
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.5));
+}
+
+/* Range Slider Styling */
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #6366f1, #8b5cf6);
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  background: linear-gradient(45deg, #4f46e5, #7c3aed);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.slider::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #6366f1, #8b5cf6);
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Button Performance Optimizations */
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .transition-all,
+  .transition-colors,
+  .transition-opacity,
+  .transition-transform {
+    transition-duration: 0ms !important;
+  }
+  
+  [class*="whileHover"],
+  [class*="whileTap"] {
+    transform: none !important;
+  }
+}
+
+/* Fast button feedback for improved responsiveness */
+.btn-fast-feedback {
+  transition: all 0.1s ease-out;
+  will-change: transform, background-color;
+}
+
+.btn-fast-feedback:active {
+  transform: scale(0.98);
+  transition-duration: 0.05s;
+}
+
+/* Optimize repaints for buttons */
+.btn-optimized {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Quick hover states */
+.btn-quick-hover {
+  transition-property: background-color, border-color, opacity;
+  transition-duration: 0.15s;
+  transition-timing-function: ease-out;
+}
+
+/* Reduce GPU usage for simple transitions */
+.transition-minimal {
+  transition: background-color 0.15s ease-out, opacity 0.15s ease-out;
+}
+
+/* Instant feedback for critical actions */
+.btn-instant {
+  transition: none;
+}
+
+.btn-instant:active {
+  transform: scale(0.95);
+}
+
+/* Optimized animation for framer-motion components */
+.motion-optimized {
+  will-change: transform;
+}
+
+/* Touch-friendly button styles for mobile */
+@media (hover: none) {
+  .btn-touch {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Remove hover states on touch devices */
+  .btn-touch:hover {
+    background-color: inherit;
+  }
+  
+  /* Enhanced active states for touch */
+  .btn-touch:active {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: scale(0.98);
+  }
+}
+
+/* Debounce protection - prevent rapid clicks */
+.btn-debounced {
+  pointer-events: all;
+}
+
+.btn-debounced:disabled {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .btn-accessible {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Focus visible improvements */
+.btn-focus-visible:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  transition: outline 0.1s ease-out;
+}
+
+/* Mobile-First Responsive Utilities */
+
+/* Prevent horizontal scrolling on mobile */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Improve text readability on mobile */
+@media (max-width: 640px) {
+  body {
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+}
+
+/* Touch-friendly interactive elements */
+@media (hover: none) and (pointer: coarse) {
+  /* Ensure minimum touch target size */
+  button, 
+  [role="button"], 
+  input[type="button"], 
+  input[type="submit"], 
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Remove hover effects on touch devices */
+  .hover\:scale-105:hover {
+    transform: none;
+  }
+  
+  .hover\:bg-white\/20:hover {
+    background-color: inherit;
+  }
+  
+  /* Enhanced touch feedback */
+  button:active,
+  [role="button"]:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease-out;
+  }
+}
+
+/* Improved mobile scrolling */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Fix viewport height issues on mobile */
+.min-h-screen-mobile {
+  min-height: 100vh;
+  min-height: 100svh; /* Safari fallback */
+}
+
+/* Mobile-friendly modal and overlay positioning */
+@media (max-width: 768px) {
+  .modal-mobile {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+}
+
+/* Prevent zoom on inputs on iOS */
+@media screen and (max-width: 768px) {
+  input, 
+  textarea, 
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Responsive text utilities */
+.text-responsive {
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
+}
+
+.text-heading-responsive {
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
+}
+
+/* Safe area padding for devices with notches */
+.safe-area-padding {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Prevent text selection on interactive elements */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Smooth transitions for theme changes */
+.theme-transition {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Focus ring for better accessibility */
+.focus-ring:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Custom tap highlight color for better UX */
+* {
+  -webkit-tap-highlight-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Optimize font rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .bg-white\/10 {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  .text-white\/70 {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+  
+  .border-white\/20 {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+  }
+}

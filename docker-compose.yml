@@ -1,0 +1,33 @@
+# Docker Compose for local production testing
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=mongodb://mongo:27017/manas-app
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=your-secret-key-here
+      - NODE_ENV=production
+    depends_on:
+      - mongo
+    networks:
+      - manas-network
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - manas-network
+
+volumes:
+  mongo-data:
+
+networks:
+  manas-network:
+    driver: bridge
