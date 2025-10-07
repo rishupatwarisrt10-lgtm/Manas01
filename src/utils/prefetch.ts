@@ -43,7 +43,7 @@ export function usePrefetchRoutes() {
 }
 
 // Utility to preload critical components
-export const preloadComponent = (componentImport: () => Promise<any>) => {
+export const preloadComponent = (componentImport: () => Promise<unknown>) => {
   // Preload component immediately
   componentImport();
 };

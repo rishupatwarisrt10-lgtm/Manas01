@@ -4,6 +4,7 @@ import { useSession, signOut } from 'next-auth/react';
 import dynamic from 'next/dynamic';
 import { useAppContext } from '@/context/AppContext';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import PerformanceMonitor from './PerformanceMonitor';
@@ -61,7 +62,7 @@ export default function Layout({ children }: LayoutProps) {
       const body = document.body;
       body.classList.add('animated-gradient');
     }
-  }, []);
+  }, [theme]);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function Layout({ children }: LayoutProps) {
 
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [isMobileMenuOpen]);
+  }, [isMobileMenuOpen, theme]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -92,9 +93,11 @@ export default function Layout({ children }: LayoutProps) {
           <div className="mb-6 p-4 bg-white/10 rounded-lg border border-white/20">
             <div className="flex items-center space-x-3">
               {session.user.image ? (
-                <img 
+                <Image 
                   src={session.user.image} 
                   alt={session.user.name || 'User'}
+                  width={40}
+                  height={40}
                   className="w-10 h-10 rounded-full"
                 />
               ) : (
@@ -127,50 +130,53 @@ export default function Layout({ children }: LayoutProps) {
             href="/" 
             prefetch={true} 
             onMouseEnter={() => router.prefetch('/')}
-            className="block py-2 text-white/80 hover:text-white transition-colors duration-100"
+            className="block py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
           >
-            Home
+            🏠 Home
           </Link>
           <Link 
             href="/dashboard" 
             prefetch={true} 
             onMouseEnter={() => router.prefetch('/dashboard')}
-            className="block py-2 text-white/80 hover:text-white transition-colors duration-100"
+            className="block py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
           >
-            Dashboard
+            📊 Dashboard
           </Link>
           <Link 
             href="/settings" 
             prefetch={true} 
             onMouseEnter={() => router.prefetch('/settings')}
-            className="block py-2 text-white/80 hover:text-white transition-colors duration-100"
+            className="block py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
           >
-            Settings
+            ⚙️ Settings
           </Link>
           {!session && (
             <>
-              <Link 
-                href="/auth/login" 
-                prefetch={true} 
-                onMouseEnter={() => router.prefetch('/auth/login')}
-                className="block py-2 text-white/80 hover:text-white transition-colors duration-100"
-              >
-                Sign In
-              </Link>
-              <Link 
-                href="/auth/register" 
-                prefetch={true} 
-                onMouseEnter={() => router.prefetch('/auth/register')}
-                className="block py-2 text-white/80 hover:text-white transition-colors duration-100"
-              >
-                Sign Up
-              </Link>
+              <div className="border-t border-white/20 my-4 pt-4">
+                <p className="text-white/60 text-sm mb-2 px-4">Authentication</p>
+                <Link 
+                  href="/auth/login" 
+                  prefetch={true} 
+                  onMouseEnter={() => router.prefetch('/auth/login')}
+                  className="block py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
+                >
+                  🔐 Sign In
+                </Link>
+                <Link 
+                  href="/auth/register" 
+                  prefetch={true} 
+                  onMouseEnter={() => router.prefetch('/auth/register')}
+                  className="block py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
+                >
+                  📝 Sign Up
+                </Link>
+              </div>
             </>
           )}
         </nav>
         
-        {/* Music Player - Hidden on smaller desktop screens to save space */}
-        <div className="xl:block hidden">
+        {/* Music Player - Visible on desktop screens */}
+        <div className="lg:block hidden">
           <MusicPlayer />
         </div>
       </aside>
@@ -223,9 +229,11 @@ export default function Layout({ children }: LayoutProps) {
                 <div className="mb-6 p-4 bg-white/10 rounded-lg border border-white/20">
                   <div className="flex items-center space-x-3">
                     {session.user.image ? (
-                      <img 
+                      <Image 
                         src={session.user.image} 
                         alt={session.user.name || 'User'}
+                        width={40}
+                        height={40}
                         className="w-10 h-10 rounded-full"
                       />
                     ) : (
@@ -262,49 +270,52 @@ export default function Layout({ children }: LayoutProps) {
                   href="/" 
                   prefetch={true}
                   onTouchStart={() => router.prefetch('/')}
-                  className="block py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-100"
+                  className="flex items-center gap-3 py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Home
+                  🏠 Home
                 </Link>
                 <Link 
                   href="/dashboard" 
                   prefetch={true}
                   onTouchStart={() => router.prefetch('/dashboard')}
-                  className="block py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-100"
+                  className="flex items-center gap-3 py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Dashboard
+                  📊 Dashboard
                 </Link>
                 <Link 
                   href="/settings" 
                   prefetch={true}
                   onTouchStart={() => router.prefetch('/settings')}
-                  className="block py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-100"
+                  className="flex items-center gap-3 py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Settings
+                  ⚙️ Settings
                 </Link>
                 {!session && (
                   <>
-                    <Link 
-                      href="/auth/login" 
-                      prefetch={true}
-                      onTouchStart={() => router.prefetch('/auth/login')}
-                      className="block py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-100"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Sign In
-                    </Link>
-                    <Link 
-                      href="/auth/register" 
-                      prefetch={true}
-                      onTouchStart={() => router.prefetch('/auth/register')}
-                      className="block py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-100"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Sign Up
-                    </Link>
+                    <div className="border-t border-white/20 my-4 pt-4">
+                      <p className="text-white/60 text-sm mb-2 px-4">Authentication</p>
+                      <Link 
+                        href="/auth/login" 
+                        prefetch={true}
+                        onTouchStart={() => router.prefetch('/auth/login')}
+                        className="flex items-center gap-3 py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        🔐 Sign In
+                      </Link>
+                      <Link 
+                        href="/auth/register" 
+                        prefetch={true}
+                        onTouchStart={() => router.prefetch('/auth/register')}
+                        className="flex items-center gap-3 py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        📝 Sign Up
+                      </Link>
+                    </div>
                   </>
                 )}
               </nav>

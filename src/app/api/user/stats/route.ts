@@ -1,25 +1,19 @@
 // src/app/api/user/stats/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import connectToDatabase from '@/lib/database';
+import { supabaseAdmin } from '@/lib/supabase';
 import User from '@/models/User';
-import Session from '@/models/Session';
-import Thought from '@/models/Thought';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
-
     // Get user basic stats
-    const user = await User.findById(session.user.id).select(
-      'sessionsCompleted totalFocusTime streak lastActiveDate createdAt'
-    );
+    const user = await User.findById(session.user.id);
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -32,45 +26,55 @@ export async function GET(request: NextRequest) {
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [
-      todaySessions,
-      weekSessions,
-      monthSessions,
-      totalThoughts,
-      activeThoughts,
-      recentSessions
+      todaySessionsResult,
+      weekSessionsResult,
+      monthSessionsResult,
+      totalThoughtsResult,
+      activeThoughtsResult,
+      recentSessionsResult
     ] = await Promise.all([
-      Session.countDocuments({
-        userId: session.user.id,
-        completed: true,
-        startTime: { $gte: today }
-      }),
-      Session.countDocuments({
-        userId: session.user.id,
-        completed: true,
-        startTime: { $gte: thisWeek }
-      }),
-      Session.countDocuments({
-        userId: session.user.id,
-        completed: true,
-        startTime: { $gte: thisMonth }
-      }),
-      Thought.countDocuments({
-        userId: session.user.id
-        // Count ALL thoughts including deleted ones for dashboard stats
-      }),
-      Thought.countDocuments({
-        userId: session.user.id,
-        isDeleted: { $ne: true } // Count only active thoughts
-      }),
-      Session.find({
-        userId: session.user.id,
-        completed: true
-      })
-        .sort({ startTime: -1 })
+      supabaseAdmin
+        .from('sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .eq('completed', true)
+        .gte('start_time', today.toISOString()),
+      supabaseAdmin
+        .from('sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .eq('completed', true)
+        .gte('start_time', thisWeek.toISOString()),
+      supabaseAdmin
+        .from('sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .eq('completed', true)
+        .gte('start_time', thisMonth.toISOString()),
+      supabaseAdmin
+        .from('thoughts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id),
+      supabaseAdmin
+        .from('thoughts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .neq('is_deleted', true),
+      supabaseAdmin
+        .from('sessions')
+        .select('mode, duration, start_time')
+        .eq('user_id', session.user.id)
+        .eq('completed', true)
+        .order('start_time', { ascending: false })
         .limit(10)
-        .select('mode duration startTime')
-        .lean()
     ]);
+
+    const todaySessions = todaySessionsResult.count || 0;
+    const weekSessions = weekSessionsResult.count || 0;
+    const monthSessions = monthSessionsResult.count || 0;
+    const totalThoughts = totalThoughtsResult.count || 0;
+    const activeThoughts = activeThoughtsResult.count || 0;
+    const recentSessions = recentSessionsResult.data || [];
 
     // Calculate streak (consecutive days with completed focus sessions)
     const streak = await calculateStreak(session.user.id);
@@ -79,8 +83,8 @@ export async function GET(request: NextRequest) {
     const peakHour = await getPeakProductivityHour(session.user.id);
 
     const stats = {
-      sessionsCompleted: user.sessionsCompleted,
-      totalFocusTime: user.totalFocusTime,
+      sessionsCompleted: user.sessions_completed,
+      totalFocusTime: user.total_focus_time,
       streak,
       todaySessions,
       weekSessions,
@@ -88,9 +92,13 @@ export async function GET(request: NextRequest) {
       totalThoughts, // All thoughts including deleted (for lifetime count)
       activeThoughts, // Only non-deleted thoughts
       peakHour,
-      memberSince: user.createdAt,
-      lastActive: user.lastActiveDate,
-      recentSessions,
+      memberSince: user.created_at,
+      lastActive: user.last_active_date,
+      recentSessions: recentSessions.map(s => ({
+        mode: s.mode,
+        duration: s.duration,
+        startTime: s.start_time, // Keep old field name for compatibility
+      })),
     };
 
     return NextResponse.json(stats);
@@ -104,23 +112,22 @@ export async function GET(request: NextRequest) {
 }
 
 async function calculateStreak(userId: string): Promise<number> {
-  const sessions = await Session.find({
-    userId,
-    mode: 'focus',
-    completed: true
-  })
-    .sort({ startTime: -1 })
-    .select('startTime')
-    .lean();
+  const { data: sessions, error } = await supabaseAdmin
+    .from('sessions')
+    .select('start_time')
+    .eq('user_id', userId)
+    .eq('mode', 'focus')
+    .eq('completed', true)
+    .order('start_time', { ascending: false });
 
-  if (sessions.length === 0) return 0;
+  if (error || !sessions || sessions.length === 0) return 0;
 
   let streak = 0;
   let currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
 
   const sessionDates = sessions.map(s => {
-    const date = new Date(s.startTime);
+    const date = new Date(s.start_time);
     date.setHours(0, 0, 0, 0);
     return date.getTime();
   });
@@ -144,20 +151,19 @@ async function calculateStreak(userId: string): Promise<number> {
 }
 
 async function getPeakProductivityHour(userId: string): Promise<number> {
-  const sessions = await Session.find({
-    userId,
-    mode: 'focus',
-    completed: true
-  })
-    .select('startTime')
-    .lean();
+  const { data: sessions, error } = await supabaseAdmin
+    .from('sessions')
+    .select('start_time')
+    .eq('user_id', userId)
+    .eq('mode', 'focus')
+    .eq('completed', true);
 
-  if (sessions.length === 0) return 10; // Default to 10 AM
+  if (error || !sessions || sessions.length === 0) return 10; // Default to 10 AM
 
   const hourCounts: { [hour: number]: number } = {};
 
   sessions.forEach(session => {
-    const hour = new Date(session.startTime).getHours();
+    const hour = new Date(session.start_time).getHours();
     hourCounts[hour] = (hourCounts[hour] || 0) + 1;
   });
 

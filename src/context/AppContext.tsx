@@ -28,16 +28,23 @@ type AppState = {
   streak: number;
 };
 
+type SessionData = {
+  mode: 'focus' | 'shortBreak' | 'longBreak';
+  sessionNumber: number;
+  [key: string]: unknown;
+};
+
 type AppContextType = AppState & {
-  addThought: (text: string, sessionData?: any) => Promise<void>;
+  addThought: (text: string, sessionData?: SessionData) => Promise<void>;
   removeThought: (thoughtId: string) => Promise<void>;
   completeThought: (thoughtId: string) => Promise<void>;
   toggleTaskComplete: (taskId: string) => Promise<void>;
+  reorderThoughts: (startIndex: number, endIndex: number) => void;
   incrementSessions: () => void;
   clearAll: () => void;
   setTheme: (theme: string) => void;
   syncWithServer: () => Promise<void>;
-  saveSession: (sessionData: any) => Promise<void>;
+  saveSession: (sessionData: Record<string, unknown>) => Promise<void>;
 };
 
 const defaultState: AppState = {
@@ -57,6 +64,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const [state, setState] = useState<AppState>(defaultState);
   const [hasLoadedFromServer, setHasLoadedFromServer] = useState(false);
+  const [deletingThoughts, setDeletingThoughts] = useState<Set<string>>(new Set());
 
   // Load from localStorage initially (for offline/guest usage)
   useEffect(() => {
@@ -87,7 +95,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [session, status]);
 
   // Sync with server when authenticated
-  const syncWithServer = async () => {
+  const syncWithServer = useCallback(async () => {
     if (!session) return;
     
     setState(prev => ({ ...prev, isLoading: true }));
@@ -107,17 +115,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         sessionsCompleted: stats.sessionsCompleted || 0,
         totalFocusTime: stats.totalFocusTime || 0,
         streak: stats.streak || 0,
-        thoughts: (thoughtsData.thoughts || []).map((thought: any) => ({
+        thoughts: (thoughtsData.thoughts || []).map((thought: Record<string, unknown>) => ({
           ...thought,
           isCompleted: thought.isCompleted ?? false, // Default to false if missing
-        })).filter((thought: any) => !thought.isDeleted), // Filter out soft-deleted thoughts
+        })).filter((thought: Record<string, unknown>) => !thought.isDeleted), // Filter out soft-deleted thoughts
         isLoading: false,
       }));
     } catch (error) {
       console.error('Failed to sync with server:', error);
       setState(prev => ({ ...prev, isLoading: false }));
     }
-  };
+  }, [session]);
 
   // Sync with server when authenticated
   useEffect(() => {
@@ -125,7 +133,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       syncWithServer();
       setHasLoadedFromServer(true);
     }
-  }, [session, hasLoadedFromServer]);
+  }, [session, hasLoadedFromServer, syncWithServer]);
 
   // Persist to localStorage (for guest usage)
   useEffect(() => {
@@ -138,7 +146,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state, session]);
 
-  const addThought = useCallback(async (text: string, sessionData?: any) => {
+  const addThought = useCallback(async (text: string, sessionData?: SessionData) => {
     if (!text.trim()) return;
     
     const newThought: Thought = {
@@ -226,7 +234,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [session]);
 
   const removeThought = useCallback(async (thoughtId: string) => {
-    if (!session) return;
+    if (!session) {
+      console.warn('No session available for removing thought');
+      return;
+    }
+    
+    if (!thoughtId || typeof thoughtId !== 'string') {
+      console.error('Invalid thoughtId provided:', thoughtId);
+      return;
+    }
+    
+    // Prevent duplicate deletion attempts
+    if (deletingThoughts.has(thoughtId)) {
+      console.warn('Thought deletion already in progress:', thoughtId);
+      return;
+    }
+    
+    // Check if thought still exists in our state
+    const thoughtExists = state.thoughts.some(t => t._id === thoughtId);
+    if (!thoughtExists) {
+      console.warn('Thought not found in local state:', thoughtId);
+      return;
+    }
+    
+    console.log('Attempting to delete thought with ID:', thoughtId);
+    
+    // Mark as being deleted
+    setDeletingThoughts(prev => new Set(prev).add(thoughtId));
+    
+    // Store the thought to restore if deletion fails
+    const thoughtToDelete = state.thoughts.find(t => t._id === thoughtId);
     
     // Remove from local state immediately
     setState((prev) => ({
@@ -235,15 +272,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
     
     try {
-      await axios.delete(`/api/thoughts/${thoughtId}`);
-    } catch (error) {
-      console.error('Failed to remove thought from server:', error);
-      // Re-add the thought if server deletion failed
-      syncWithServer();
+      const response = await axios.delete(`/api/thoughts/${thoughtId}`);
+      console.log('Thought deleted successfully:', response.data);
+    } catch (error: any) {
+      console.error('Failed to remove thought from server:', {
+        thoughtId,
+        error: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      
+      // Only restore if it's not a 404 (thought already deleted)
+      if (error.response?.status !== 404) {
+        // Re-add the thought if server deletion failed and we have the original thought
+        if (thoughtToDelete) {
+          setState((prev) => ({
+            ...prev,
+            thoughts: [thoughtToDelete, ...prev.thoughts],
+          }));
+        } else {
+          // Fallback: sync with server to restore state
+          syncWithServer();
+        }
+      }
+    } finally {
+      // Remove from deleting set
+      setDeletingThoughts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(thoughtId);
+        return newSet;
+      });
     }
-  }, [session]);
+  }, [session, state.thoughts, syncWithServer, deletingThoughts]);
   
-  const saveSession = async (sessionData: any) => {
+  const saveSession = useCallback(async (sessionData: Record<string, unknown>) => {
     if (!session) return;
     
     try {
@@ -255,7 +317,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Failed to save session to server:', error);
     }
-  };
+  }, [session]);
 
   const incrementSessions = useCallback(() => {
     setState((prev) => ({ ...prev, sessionsCompleted: prev.sessionsCompleted + 1 }));
@@ -267,6 +329,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, theme }));
   }, []);
 
+  const reorderThoughts = useCallback((startIndex: number, endIndex: number) => {
+    setState((prev) => {
+      const result = Array.from(prev.thoughts);
+      const [removed] = result.splice(startIndex, 1);
+      result.splice(endIndex, 0, removed);
+      return { ...prev, thoughts: result };
+    });
+  }, []);
+
   // Auto-cleanup is no longer needed - thoughts are deleted immediately
   // useEffect removed for simplicity
 
@@ -276,12 +347,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     removeThought,
     completeThought,
     toggleTaskComplete,
+    reorderThoughts,
     incrementSessions,
     clearAll,
     setTheme,
     syncWithServer,
     saveSession,
-  }), [state, addThought, removeThought, completeThought, toggleTaskComplete, incrementSessions, clearAll, setTheme, syncWithServer, saveSession]);
+  }), [state, addThought, removeThought, completeThought, toggleTaskComplete, reorderThoughts, incrementSessions, clearAll, setTheme, syncWithServer, saveSession]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Layout from "@/app/components/Layout";
 import { useAppContext } from "@/context/AppContext";
@@ -61,12 +62,23 @@ export default function DashboardPage() {
     );
   }
   return (
-    <AuthGuard>
+    <AuthGuard allowBoth={true}>
       <Layout>
         <div className="h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-3xl sm:text-4xl font-bold mb-2">Atma-Darshan</h1>
             <h2 className="text-lg sm:text-xl text-white/70 mb-6 sm:mb-8">Your Mirror to the Self</h2>
+            
+            {!session && (
+              <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+                <p className="text-blue-200 text-sm">
+                  👤 <strong>Guest Mode:</strong> You&apos;re viewing in guest mode. 
+                  <Link href="/auth/login" className="underline hover:text-white transition-colors">
+                    Sign in
+                  </Link> to save your progress and sync across devices.
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pb-8">
               {/* Card 1: Total Focus Sessions */}

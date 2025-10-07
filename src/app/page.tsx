@@ -6,7 +6,6 @@ import { useSession } from 'next-auth/react';
 import { useAppContext } from '@/context/AppContext';
 import usePomodoro from "@/hooks/usePomodoro";
 import dynamic from 'next/dynamic';
-import AuthGuard from "@/components/AuthGuard";
 import Layout from "@/app/components/Layout";
 import Timer from "@/app/components/Timer";
 import Link from 'next/link';
@@ -113,7 +112,7 @@ function AuthenticatedApp() {
   } = usePomodoro();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { addThought, thoughts, sessionsCompleted, completeThought, removeThought, toggleTaskComplete } = useAppContext();
+  const { addThought, thoughts, sessionsCompleted, completeThought, removeThought, toggleTaskComplete, reorderThoughts } = useAppContext();
 
   const handleSaveThought = async (thoughtText: string) => {
     await addThought(thoughtText, {
@@ -161,9 +160,9 @@ function AuthenticatedApp() {
           <div className="mt-6 sm:mt-8 max-h-48 sm:max-h-64 overflow-y-auto w-full max-w-xs sm:max-w-sm md:max-w-2xl px-4">
             <TaskList 
               thoughts={thoughts} 
-              onThoughtComplete={completeThought}
               onThoughtDelete={removeThought}
               onToggleComplete={toggleTaskComplete}
+              onReorderThoughts={reorderThoughts}
             />
           </div>
         )}

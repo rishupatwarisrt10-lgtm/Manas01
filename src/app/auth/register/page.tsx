@@ -81,7 +81,7 @@ export default function RegisterPage() {
         }
       }, 1500);
 
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);

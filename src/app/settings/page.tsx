@@ -101,7 +101,7 @@ export default function SettingsPage() {
           }));
           setMessage('Settings saved locally!');
           setTimeout(() => setMessage(''), 3000);
-        } catch (error) {
+        } catch {
           setMessage('Failed to save settings locally.');
           setTimeout(() => setMessage(''), 3000);
         }
@@ -143,11 +143,11 @@ export default function SettingsPage() {
     }, 0); // Use setTimeout to make it non-blocking
   };
   
-  const handleChange = (field: keyof UserPreferences, value: any) => {
+  const handleChange = (field: keyof UserPreferences, value: number | string | boolean) => {
     setPreferences(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleLiveBackgroundChange = (field: keyof UserPreferences['liveBackground'], value: any) => {
+  const handleLiveBackgroundChange = (field: keyof UserPreferences['liveBackground'], value: number | string | boolean) => {
     // Immediate update for instant feedback
     setPreferences(prev => ({
       ...prev,
@@ -449,14 +449,14 @@ export default function SettingsPage() {
                   Manas is a mindful Pomodoro timer designed to help you achieve deep focus while maintaining awareness of your thoughts and mental state.
                 </p>
                 <p>
-                  The name "Manas" comes from Sanskrit, meaning "mind" or "mental faculty," representing the space where thoughts arise and where mindfulness is cultivated.
+                  The name &quot;Manas&quot; comes from Sanskrit, meaning &quot;mind&quot; or &quot;mental faculty&quot;, representing the space where thoughts arise and where mindfulness is cultivated.
                 </p>
                 <p>
                   Created by <span className="text-white font-semibold">Rishu Patwari</span>, a vibe coder who crafted this experience with the help of AI to bring mindful productivity to your digital workspace.
                 </p>
                 <div className="pt-4 border-t border-white/20">
                   <p className="text-xs sm:text-sm text-white/60">
-                    Version 2.0.0 • Built with Next.js, NextAuth.js, and MongoDB • Made with ❤️ for mindful productivity
+                    Version 2.0.0 • Built with Next.js, NextAuth.js, and Supabase • Made with ❤️ for mindful productivity
                   </p>
                 </div>
               </div>

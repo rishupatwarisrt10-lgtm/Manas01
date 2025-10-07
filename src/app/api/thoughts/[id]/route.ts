@@ -2,9 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import connectToDatabase from '@/lib/database';
-import Thought from '@/models/Thought';
-import mongoose from 'mongoose';
+import { supabaseAdmin } from '@/lib/supabase';
+
+function isValidUUID(id: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+}
 
 export async function DELETE(
   request: NextRequest,
@@ -18,34 +21,50 @@ export async function DELETE(
 
     const { id } = await params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidUUID(id)) {
       return NextResponse.json(
         { error: 'Invalid thought ID' },
         { status: 400 }
       );
     }
 
-    await connectToDatabase();
-
     // Soft delete: mark as deleted instead of removing
-    const thought = await Thought.findOneAndUpdate(
-      { 
-        _id: id, 
-        userId: session.user.id,
-        isDeleted: { $ne: true } // Only update if not already deleted
-      },
-      { 
-        isDeleted: true, 
-        deletedAt: new Date() 
-      },
-      { new: true }
-    );
+    const { error } = await supabaseAdmin
+      .from('thoughts')
+      .update({ 
+        is_deleted: true, 
+        deleted_at: new Date().toISOString() 
+      })
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+      .neq('is_deleted', true) // Only update if not already deleted
+      .select()
+      .single();
 
-    if (!thought) {
+    if (error && error.code === 'PGRST116') {
+      // Check if the thought exists but is already deleted
+      const { data: deletedThought, error: checkError } = await supabaseAdmin
+        .from('thoughts')
+        .select('id')
+        .eq('id', id)
+        .eq('user_id', session.user.id)
+        .eq('is_deleted', true)
+        .single();
+      
+      if (!checkError && deletedThought) {
+        // Thought was already deleted, return success to prevent errors
+        return NextResponse.json({ message: 'Thought was already deleted' });
+      }
+      
       return NextResponse.json(
-        { error: 'Thought not found or already deleted' },
+        { error: 'Thought not found' },
         { status: 404 }
       );
+    }
+
+    if (error) {
+      console.error('Delete thought error:', error);
+      throw error;
     }
 
     return NextResponse.json({ message: 'Thought deleted successfully' });
@@ -71,20 +90,18 @@ export async function PUT(
     const { id } = await params;
     const { text, tags, isDealtWith, isCompleted } = await request.json();
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidUUID(id)) {
       return NextResponse.json(
         { error: 'Invalid thought ID' },
         { status: 400 }
       );
     }
 
-    await connectToDatabase();
-
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     // Handle completion status toggle
     if (isCompleted !== undefined) {
-      updateData.isCompleted = isCompleted;
+      updateData.is_completed = isCompleted;
     }
     
     // Handle text and tags updates
@@ -108,43 +125,58 @@ export async function PUT(
       updateData.tags = tags || [];
     }
     
-    // Handle "dealt with" status
+    // Handle "dealt with" status (if your app supports this)
     if (isDealtWith !== undefined) {
-      updateData.isDealtWith = isDealtWith;
+      // Note: This field doesn't exist in our Supabase schema, 
+      // but we can add it to the completion status
+      updateData.is_completed = isDealtWith;
       
       if (isDealtWith) {
-        updateData.dealtWithAt = new Date();
+        // You might want to add these fields to your schema if needed
+        // updateData.dealt_with_at = new Date().toISOString();
         // Schedule for deletion at next midnight
         const nextMidnight = new Date();
         nextMidnight.setHours(24, 0, 0, 0); // Next midnight
-        updateData.scheduledForDeletion = nextMidnight;
-      } else {
-        // If unmarking as dealt with, remove deletion schedule
-        updateData.dealtWithAt = null;
-        updateData.scheduledForDeletion = null;
+        // updateData.scheduled_for_deletion = nextMidnight.toISOString();
       }
     }
-    
-    updateData.updatedAt = new Date();
 
-    const thought = await Thought.findOneAndUpdate(
-      { 
-        _id: id, 
-        userId: session.user.id,
-        isDeleted: { $ne: true } // Only update if not deleted
-      },
-      updateData,
-      { new: true }
-    );
+    const { data: thought, error } = await supabaseAdmin
+      .from('thoughts')
+      .update(updateData)
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+      .neq('is_deleted', true) // Only update if not deleted
+      .select()
+      .single();
 
-    if (!thought) {
-      return NextResponse.json(
-        { error: 'Thought not found' },
-        { status: 404 }
-      );
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: 'Thought not found' },
+          { status: 404 }
+        );
+      }
+      console.error('Update thought error:', error);
+      throw error;
     }
 
-    return NextResponse.json(thought);
+    // Format response to match expected structure
+    const formattedThought = {
+      id: thought.id,
+      userId: thought.user_id,
+      text: thought.text,
+      timestamp: thought.timestamp,
+      session: thought.session,
+      tags: thought.tags,
+      isCompleted: thought.is_completed,
+      isDeleted: thought.is_deleted,
+      deletedAt: thought.deleted_at,
+      createdAt: thought.created_at,
+      updatedAt: thought.updated_at,
+    };
+
+    return NextResponse.json(formattedThought);
   } catch (error) {
     console.error('Update thought error:', error);
     return NextResponse.json(

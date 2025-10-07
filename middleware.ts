@@ -28,7 +28,7 @@ export function middleware(request: NextRequest) {
     const sessionToken = request.cookies.get('next-auth.session-token') || 
                         request.cookies.get('__Secure-next-auth.session-token');
     
-    const protectedRoutes = ['/dashboard', '/settings'];
+    const protectedRoutes: string[] = []; // Remove all route protection for guest access
     const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
     
     if (isProtectedRoute && !sessionToken) {

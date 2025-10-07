@@ -150,7 +150,7 @@ export default function LoginPage() {
             className="text-center mt-4 sm:mt-6"
           >
             <p className="text-white/70 text-sm sm:text-base">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/auth/register" className="text-white font-semibold hover:underline">
                 Sign up
               </Link>

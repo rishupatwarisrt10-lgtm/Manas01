@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useAppContext } from '@/context/AppContext';
 
 export default function LiveBackground() {
-  const { theme } = useAppContext();
+  const { theme: _theme } = useAppContext();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [backgroundSettings, setBackgroundSettings] = useState({
     enabled: false,

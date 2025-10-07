@@ -1,7 +1,6 @@
 // src/app/api/auth/register/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import connectToDatabase from '@/lib/database';
 import User from '@/models/User';
 import { authRateLimit } from '@/lib/rateLimit';
 import { validateRegistration, sanitizeText } from '@/lib/validation';
@@ -32,8 +31,6 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    await connectToDatabase();
-
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
@@ -59,7 +56,7 @@ export async function POST(request: NextRequest) {
       {
         message: 'User created successfully',
         user: {
-          id: user._id,
+          id: user.id,
           email: user.email,
           name: user.name,
         },

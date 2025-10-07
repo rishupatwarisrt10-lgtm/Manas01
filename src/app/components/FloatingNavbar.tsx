@@ -16,7 +16,11 @@ export default function FloatingNavbar() {
   const { thoughts, removeThought, toggleTaskComplete } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<'tasks' | 'thoughts' | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([
+    { id: '1', text: 'Complete project proposal', completed: false, createdAt: new Date().toISOString() },
+    { id: '2', text: 'Review team feedback', completed: false, createdAt: new Date().toISOString() },
+    { id: '3', text: 'Schedule client meeting', completed: true, createdAt: new Date().toISOString() },
+  ]);
   const [newTask, setNewTask] = useState('');
   const [processingThoughts, setProcessingThoughts] = useState<Set<string>>(new Set());
 
@@ -44,10 +48,17 @@ export default function FloatingNavbar() {
     setTasks(tasks.filter(task => task.id !== taskId));
   };
 
-  const handleToggleComplete = async (thought: any) => {
+  const reorderTasks = (startIndex: number, endIndex: number) => {
+    const result = Array.from(tasks);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+    setTasks(result);
+  };
+
+  const handleToggleComplete = async (thought: { _id?: string; id?: string; }) => {
     if (!thought._id || processingThoughts.has(thought._id)) return;
     
-    setProcessingThoughts(prev => new Set(prev).add(thought._id));
+    setProcessingThoughts(prev => new Set(prev).add(thought._id!));
     
     try {
       await toggleTaskComplete(thought._id);
@@ -56,25 +67,31 @@ export default function FloatingNavbar() {
     } finally {
       setProcessingThoughts(prev => {
         const newSet = new Set(prev);
-        newSet.delete(thought._id);
+        newSet.delete(thought._id!);
         return newSet;
       });
     }
   };
 
-  const handleDeleteThought = async (thought: any) => {
-    if (!thought._id || processingThoughts.has(thought._id)) return;
+  const handleDeleteThought = async (thought: { _id?: string; id?: string; text?: string; }) => {
+    if (!thought._id || processingThoughts.has(thought._id)) {
+      console.warn('Cannot delete thought from navbar - invalid ID or already processing:', { id: thought._id, thought });
+      return;
+    }
     
-    setProcessingThoughts(prev => new Set(prev).add(thought._id));
+    console.log('Deleting thought from navbar:', { id: thought._id, text: thought.text });
+    
+    setProcessingThoughts(prev => new Set(prev).add(thought._id!));
     
     try {
       await removeThought(thought._id);
+      console.log('Thought deleted successfully from navbar');
     } catch (error) {
-      console.error('Failed to delete thought:', error);
+      console.error('Failed to delete thought from navbar:', error);
     } finally {
       setProcessingThoughts(prev => {
         const newSet = new Set(prev);
-        newSet.delete(thought._id);
+        newSet.delete(thought._id!);
         return newSet;
       });
     }
@@ -185,6 +202,25 @@ export default function FloatingNavbar() {
 
                 {/* Panel Content */}
                 <div className="p-3 sm:p-4 overflow-y-auto scrollbar-custom flex-1">
+                  <style jsx>{`
+                    .scrollbar-custom::-webkit-scrollbar {
+                      width: 12px;
+                    }
+                    .scrollbar-custom::-webkit-scrollbar-track {
+                      background: rgba(255, 255, 255, 0.1);
+                      border-radius: 6px;
+                    }
+                    .scrollbar-custom::-webkit-scrollbar-thumb {
+                      background: rgba(255, 255, 255, 0.3);
+                      border-radius: 6px;
+                      border: 2px solid transparent;
+                      background-clip: content-box;
+                    }
+                    .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+                      background: rgba(255, 255, 255, 0.5);
+                      background-clip: content-box;
+                    }
+                  `}</style>
                   {activePanel === 'tasks' && (
                     <div className="space-y-3 sm:space-y-4">
                       {/* Add Task Form */}
@@ -205,19 +241,75 @@ export default function FloatingNavbar() {
                         </button>
                       </div>
 
+                      {tasks.length > 1 && (
+                        <p className="text-xs text-white/50 text-center">✨ Smoothly drag tasks up/down to reorder them</p>
+                      )}
+
                       {/* Tasks List */}
                       <div className="space-y-2">
                         {tasks.length === 0 ? (
                           <p className="text-white/60 text-center py-6 text-sm">No tasks yet. Add one above!</p>
                         ) : (
-                          tasks.map((task) => (
+                          tasks.map((task, index) => (
                             <motion.div
                               key={task.id}
                               initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
+                              animate={{ 
+                                opacity: 1, 
+                                x: 0,
+                                scale: 1, 
+                                rotate: 0,
+                                transition: { type: "spring", stiffness: 300, damping: 25 }
+                              }}
                               exit={{ opacity: 0, x: 20 }}
-                              className="flex items-center gap-3 p-3 bg-white/5 rounded-lg"
+                              drag="y"
+                              dragConstraints={{ top: 0, bottom: 0 }}
+                              dragElastic={0.2}
+                              dragMomentum={false}
+                              dragTransition={{ bounceStiffness: 300, bounceDamping: 40 }}
+                              onDragStart={() => {
+                                // Add haptic feedback if supported
+                                if (navigator.vibrate) navigator.vibrate(10);
+                              }}
+                              onDragEnd={(event, info) => {
+                                const threshold = 25;
+                                const velocity = Math.abs(info.velocity.y);
+                                const offset = info.offset.y;
+                                
+                                // Consider both offset and velocity for more responsive reordering
+                                if (Math.abs(offset) > threshold || velocity > 300) {
+                                  const newIndex = offset > 0 
+                                    ? Math.min(index + 1, tasks.length - 1)
+                                    : Math.max(index - 1, 0);
+                                  if (newIndex !== index) {
+                                    reorderTasks(index, newIndex);
+                                  }
+                                }
+                              }}
+                              whileDrag={{ 
+                                scale: 1.08, 
+                                zIndex: 10, 
+                                boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                                rotate: Math.random() * 4 - 2 // Subtle random rotation
+                              }}
+                              layout
+                              layoutId={task.id}
+                              transition={{ 
+                                layout: { type: "spring", stiffness: 300, damping: 30, duration: 0.6 },
+                                default: { type: "spring", stiffness: 300, damping: 25 }
+                              }}
+                              className="flex items-center gap-3 p-3 bg-white/5 rounded-lg cursor-grab active:cursor-grabbing"
                             >
+                              {/* Drag Handle */}
+                              <motion.div 
+                                className="flex flex-col gap-1 text-white/40 cursor-grab active:cursor-grabbing p-1 rounded"
+                                whileHover={{ scale: 1.1, color: 'rgba(255,255,255,0.6)' }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                <div className="w-1.5 h-1.5 bg-current rounded-full"></div>
+                                <div className="w-1.5 h-1.5 bg-current rounded-full"></div>
+                                <div className="w-1.5 h-1.5 bg-current rounded-full"></div>
+                              </motion.div>
                               <button
                                 onClick={() => toggleTask(task.id)}
                                 className={`w-4 h-4 sm:w-5 sm:h-5 rounded border-2 flex items-center justify-center transition-colors duration-100 active:scale-95 flex-shrink-0 ${
@@ -306,9 +398,13 @@ export default function FloatingNavbar() {
                                 
                                 {/* DELETE BUTTON */}
                                 <button
-                                  onClick={() => handleDeleteThought(thought)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    handleDeleteThought(thought);
+                                  }}
                                   disabled={isProcessing || !thought._id}
-                                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-red-500/30 border-2 border-red-400/50 flex items-center justify-center text-white font-bold text-xs sm:text-sm hover:bg-red-500/50 hover:border-red-400 flex-shrink-0 mt-1"
+                                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-red-500/30 border-2 border-red-400/50 flex items-center justify-center text-white font-bold text-xs sm:text-sm hover:bg-red-500/50 hover:border-red-400 flex-shrink-0 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Delete this thought"
                                 >
                                   ✕

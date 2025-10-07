@@ -52,7 +52,7 @@ export function createRateLimitResponse(retryAfter: number): NextResponse {
 }
 
 // Input sanitization
-export function sanitizeInput(input: any): any {
+export function sanitizeInput(input: unknown): unknown {
   if (typeof input === 'string') {
     return input
       .trim()
@@ -65,9 +65,10 @@ export function sanitizeInput(input: any): any {
   }
   
   if (typeof input === 'object' && input !== null) {
-    const sanitized: any = {};
-    Object.keys(input).slice(0, 50).forEach(key => { // Limit object keys
-      sanitized[key] = sanitizeInput(input[key]);
+    const sanitized: Record<string, unknown> = {};
+    const inputObj = input as Record<string, unknown>;
+    Object.keys(inputObj).slice(0, 50).forEach(key => { // Limit object keys
+      sanitized[key] = sanitizeInput(inputObj[key]);
     });
     return sanitized;
   }
@@ -76,16 +77,18 @@ export function sanitizeInput(input: any): any {
 }
 
 // Enhanced error handler that doesn't leak sensitive info
-export function createErrorResponse(error: any, isDev: boolean = false): NextResponse {
+export function createErrorResponse(error: unknown, isDev: boolean = false): NextResponse {
   console.error('API Error:', error);
   
   // In development, show more details
   if (isDev && process.env.NODE_ENV === 'development') {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: error.message,
-        stack: error.stack
+        details: errorMessage,
+        stack: errorStack
       },
       { status: 500 }
     );
